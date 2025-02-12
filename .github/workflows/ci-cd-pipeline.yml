@@ -1,40 +1,33 @@
-name: CI/CD Pipeline
+name: Secure CI/CD Pipeline 
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
   pull_request:
-    branches:
-      - main
+    branches: [main]
 
 jobs:
-  build:
+  security_scan:
+    name: Security Scanning
     runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
 
     steps:
-    - name: Check out repository
-      uses: actions/checkout@v2
+      - name: Checkout Repository
+        uses: actions/checkout@v4
 
-    - name: Set up Python
-      uses: actions/setup-python@v2
-      with:
-        python-version: '3.13.2'
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v2
+        with:
+          languages: python
 
-    - name: Install dependencies
-      run: |
-        python -m venv venv
-        source venv/bin/activate
-        pip install -r requirements.txt
-        pip install safety
-        pip install pytest
+      - name: Run CodeQL Analysis
+        uses: github/codeql-action/analyze@v2
 
-    - name: Run Safety check for vulnerabilities
-      run: |
-        source venv/bin/activate
-        safety check --file=requirements.txt
-
-    - name: Run Tests
-      run: |
-        source venv/bin/activate
-        pytest
+      - name: Run Bandit (Python Security Linter)
+        run: |
+          pip install bandit
+          bandit -r app.py
